@@ -1,0 +1,1412 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Specora Core — Invisible by Design</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@100;200;300;400&family=Lora:ital,wght@0,400;0,500;1,400&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        mica: '#F5F2EE',
+                        linen: '#EDE8E0',
+                        warmgray: '#A8A39E',
+                        halo: '#F0D9C6',
+                        'halo-deep': '#E8C4A8',
+                        deepgray: '#2C2C2C',
+                        spacegray: '#4A4540',
+                        warmdark: '#3D3530',
+                    },
+                    fontFamily: {
+                        heading: ['Outfit', 'sans-serif'],
+                        body: ['Lora', 'serif'],
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+        :root {
+            --ambient-bg: #F5F2EE;
+            --ambient-warmth: 0;
+            --ambient-brightness: 1;
+            --halo-alpha: 0;
+        }
+
+        html { scroll-behavior: smooth; }
+
+        body {
+            font-family: 'Lora', serif;
+            color: #2C2C2C;
+            background: var(--ambient-bg);
+            overflow-x: hidden;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        /* Noise texture overlay */
+        body::after {
+            content: '';
+            position: fixed;
+            inset: 0;
+            z-index: 10000;
+            pointer-events: none;
+            opacity: 0.028;
+            background: url("data:image/svg+xml,%3Csvg viewBox='0 0 512 512' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+            background-size: 256px 256px;
+        }
+
+        .font-heading { font-family: 'Outfit', sans-serif; }
+        .font-body { font-family: 'Lora', serif; }
+
+        /* Navigation */
+        nav {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 1000;
+            padding: 28px 48px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            transition: all 0.8s ease;
+        }
+        nav.scrolled {
+            background: rgba(245, 242, 238, 0.85);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            padding: 18px 48px;
+        }
+        nav a {
+            font-family: 'Outfit', sans-serif;
+            font-weight: 200;
+            font-size: 13px;
+            letter-spacing: 0.12em;
+            text-transform: uppercase;
+            color: #A8A39E;
+            text-decoration: none;
+            transition: color 0.5s ease;
+        }
+        nav a:hover { color: #2C2C2C; }
+        .nav-logo {
+            font-family: 'Outfit', sans-serif;
+            font-weight: 200;
+            font-size: 16px;
+            letter-spacing: 0.2em;
+            color: #2C2C2C;
+            text-decoration: none;
+        }
+
+        /* Hero */
+        #hero {
+            position: relative;
+            height: 200vh;
+            /* 100vh for visible area, 100vh for scroll space */
+        }
+        .hero-sticky {
+            position: sticky;
+            top: 0;
+            height: 100vh;
+            overflow: hidden;
+            background: #1a1714;
+        }
+        .hero-scene {
+            position: absolute;
+            inset: 0;
+            transition: background 0.1s linear;
+        }
+
+        /* Curtains */
+        .curtain {
+            position: absolute;
+            top: 0;
+            width: 38%;
+            height: 100%;
+            transition: transform 1.8s cubic-bezier(0.25, 0.1, 0.25, 1), opacity 1.8s ease;
+            z-index: 3;
+        }
+        .curtain-left {
+            left: 0;
+            background: linear-gradient(to right, 
+                rgba(200, 190, 178, 0.25) 0%, 
+                rgba(200, 190, 178, 0.12) 60%,
+                rgba(200, 190, 178, 0.03) 100%);
+            transform-origin: left center;
+        }
+        .curtain-right {
+            right: 0;
+            background: linear-gradient(to left, 
+                rgba(200, 190, 178, 0.25) 0%, 
+                rgba(200, 190, 178, 0.12) 60%,
+                rgba(200, 190, 178, 0.03) 100%);
+            transform-origin: right center;
+        }
+
+        /* Light rays */
+        .light-rays {
+            position: absolute;
+            inset: 0;
+            z-index: 2;
+            opacity: 0;
+            transition: opacity 2s ease;
+        }
+        .light-ray {
+            position: absolute;
+            top: -30%;
+            height: 160%;
+            background: linear-gradient(to bottom, 
+                transparent 0%, 
+                rgba(240, 217, 198, 0.06) 30%, 
+                rgba(240, 217, 198, 0.12) 50%, 
+                rgba(240, 217, 198, 0.06) 70%, 
+                transparent 100%);
+            transform-origin: top center;
+        }
+
+        /* Smart panel */
+        .smart-panel {
+            position: absolute;
+            right: 18%;
+            top: 42%;
+            width: 130px;
+            height: 85px;
+            border-radius: 10px;
+            background: rgba(245, 242, 238, 0.02);
+            border: 1px solid rgba(245, 242, 238, 0.015);
+            z-index: 4;
+            transition: all 2.5s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+        }
+        .panel-dot {
+            width: 5px;
+            height: 5px;
+            border-radius: 50%;
+            background: rgba(245, 242, 238, 0.03);
+            transition: all 2.5s ease;
+        }
+        .panel-dot.active {
+            background: rgba(240, 217, 198, 0.5);
+            box-shadow: 0 0 12px rgba(240, 217, 198, 0.3);
+        }
+
+        /* Dust particle canvas */
+        #dustCanvas {
+            position: absolute;
+            inset: 0;
+            z-index: 5;
+            pointer-events: none;
+        }
+
+        /* Hero text overlay */
+        .hero-text {
+            position: absolute;
+            inset: 0;
+            z-index: 10;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            pointer-events: none;
+        }
+        .hero-text h1 {
+            font-family: 'Outfit', sans-serif;
+            font-weight: 100;
+            font-size: clamp(36px, 5.5vw, 72px);
+            letter-spacing: 0.15em;
+            color: rgba(245, 242, 238, 0.9);
+            transition: color 1.5s ease, opacity 1.5s ease;
+            line-height: 1.3;
+        }
+        .hero-text .tagline {
+            font-family: 'Lora', serif;
+            font-weight: 400;
+            font-style: italic;
+            font-size: clamp(14px, 1.5vw, 18px);
+            color: rgba(168, 163, 158, 0.7);
+            margin-top: 20px;
+            letter-spacing: 0.02em;
+            transition: color 1.5s ease, opacity 1.5s ease;
+        }
+
+        /* Scroll indicator */
+        .scroll-indicator {
+            position: absolute;
+            bottom: 48px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 10;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 8px;
+            transition: opacity 1s ease;
+        }
+        .scroll-line {
+            width: 1px;
+            height: 48px;
+            background: linear-gradient(to bottom, rgba(240,217,198,0.4), transparent);
+            position: relative;
+            overflow: hidden;
+        }
+        .scroll-dot {
+            width: 3px;
+            height: 3px;
+            border-radius: 50%;
+            background: rgba(240, 217, 198, 0.6);
+            position: absolute;
+            top: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            animation: scrollDrop 2.5s ease-in-out infinite;
+        }
+        @keyframes scrollDrop {
+            0% { top: 0; opacity: 0; }
+            20% { opacity: 1; }
+            80% { opacity: 1; }
+            100% { top: 100%; opacity: 0; }
+        }
+        .scroll-text {
+            font-family: 'Outfit', sans-serif;
+            font-weight: 200;
+            font-size: 10px;
+            letter-spacing: 0.2em;
+            text-transform: uppercase;
+            color: rgba(168, 163, 158, 0.5);
+        }
+
+        /* Ambient glow that follows cursor */
+        .cursor-glow {
+            position: fixed;
+            width: 400px;
+            height: 400px;
+            border-radius: 50%;
+            background: radial-gradient(circle, rgba(240, 217, 198, 0.08) 0%, transparent 70%);
+            pointer-events: none;
+            z-index: 9999;
+            transform: translate(-50%, -50%);
+            transition: opacity 0.5s ease;
+            mix-blend-mode: multiply;
+        }
+
+        /* Philosophy section */
+        .philosophy-section {
+            padding: 160px 48px;
+            max-width: 900px;
+            margin: 0 auto;
+        }
+        .philosophy-section .lead {
+            font-family: 'Outfit', sans-serif;
+            font-weight: 200;
+            font-size: clamp(28px, 3.5vw, 44px);
+            line-height: 1.6;
+            color: #2C2C2C;
+            letter-spacing: 0.02em;
+        }
+        .philosophy-section .lead em {
+            font-style: normal;
+            color: #A8A39E;
+        }
+
+        /* Divider */
+        .warm-divider {
+            width: 40px;
+            height: 1px;
+            background: linear-gradient(to right, transparent, #E8C4A8, transparent);
+            margin: 0 auto;
+        }
+
+        /* Interactive demo section */
+        .interactive-section {
+            position: relative;
+            padding: 120px 48px;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+        .demo-area {
+            position: relative;
+            width: 100%;
+            max-width: 1000px;
+            height: 500px;
+            border-radius: 24px;
+            background: linear-gradient(135deg, rgba(237, 232, 224, 0.6), rgba(245, 242, 238, 0.8));
+            border: 1px solid rgba(168, 163, 158, 0.15);
+            overflow: hidden;
+            cursor: none;
+        }
+        .demo-ambient-light {
+            position: absolute;
+            width: 300px;
+            height: 300px;
+            border-radius: 50%;
+            background: radial-gradient(circle, rgba(240, 217, 198, 0.25) 0%, rgba(240, 217, 198, 0.05) 40%, transparent 70%);
+            pointer-events: none;
+            transform: translate(-50%, -50%);
+            transition: left 0.6s cubic-bezier(0.25, 0.1, 0.25, 1), top 0.6s cubic-bezier(0.25, 0.1, 0.25, 1);
+        }
+        .demo-reading {
+            position: absolute;
+            bottom: 40px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 48px;
+            font-family: 'Outfit', sans-serif;
+            font-weight: 200;
+            font-size: 12px;
+            letter-spacing: 0.1em;
+            color: #A8A39E;
+            z-index: 2;
+        }
+        .demo-reading .value {
+            font-weight: 300;
+            font-size: 18px;
+            color: #4A4540;
+            display: block;
+            margin-bottom: 4px;
+            transition: color 0.5s ease;
+        }
+        .demo-contract-hint {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            text-align: center;
+            z-index: 1;
+        }
+        .demo-contract-hint .icon-ring {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            border: 1px solid rgba(168, 163, 158, 0.2);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 20px;
+            transition: border-color 0.5s ease, box-shadow 0.5s ease;
+        }
+        .demo-contract-hint .icon-ring svg {
+            color: #A8A39E;
+            transition: color 0.5s ease;
+        }
+        .demo-contract-hint p {
+            font-family: 'Lora', serif;
+            font-style: italic;
+            font-size: 15px;
+            color: #A8A39E;
+        }
+
+        /* Scene narrative section */
+        .scenes-section {
+            padding: 80px 0;
+        }
+        .scene-block {
+            display: grid;
+            grid-template-columns: 1fr 80px 1fr;
+            min-height: 80vh;
+            align-items: center;
+            padding: 60px 48px;
+            position: relative;
+        }
+        @media (max-width: 768px) {
+            .scene-block {
+                grid-template-columns: 1fr;
+                grid-template-rows: auto 40px auto;
+                min-height: auto;
+                padding: 60px 32px;
+            }
+            .scene-block .scene-connector { order: 2; }
+            .scene-block .scene-image { order: 1; }
+            .scene-block .scene-text { order: 3; }
+        }
+        .scene-image {
+            position: relative;
+            border-radius: 16px;
+            overflow: hidden;
+            aspect-ratio: 4/5;
+            max-height: 500px;
+        }
+        .scene-image img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            filter: sepia(15%) saturate(75%) brightness(98%);
+            transition: transform 1.2s ease, filter 1.2s ease;
+        }
+        .scene-block:hover .scene-image img {
+            transform: scale(1.03);
+            filter: sepia(10%) saturate(85%) brightness(100%);
+        }
+        .scene-image::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(135deg, rgba(245,242,238,0.2), transparent 50%);
+            pointer-events: none;
+        }
+
+        /* Flowing light connector */
+        .scene-connector {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+        }
+        .light-flow-svg {
+            width: 80px;
+            height: 100%;
+            min-height: 200px;
+        }
+        @media (max-width: 768px) {
+            .scene-connector {
+                order: 2;
+                width: 100%;
+                min-height: 40px;
+                height: 40px;
+            }
+            .light-flow-svg {
+                width: 100%;
+                height: 40px;
+                min-height: auto;
+            }
+        }
+        .light-flow-path {
+            fill: none;
+            stroke: rgba(232, 196, 168, 0.3);
+            stroke-width: 1;
+            stroke-dasharray: 8 12;
+        }
+        .light-flow-glow {
+            fill: none;
+            stroke: url(#flowGrad);
+            stroke-width: 2;
+            stroke-dasharray: 4 60;
+            animation: flowLight 3s ease-in-out infinite;
+            filter: url(#flowGlow);
+        }
+        @keyframes flowLight {
+            0% { stroke-dashoffset: 0; }
+            100% { stroke-dashoffset: -64; }
+        }
+
+        .scene-text {
+            padding: 20px 0;
+        }
+        .scene-number {
+            font-family: 'Outfit', sans-serif;
+            font-weight: 100;
+            font-size: 48px;
+            color: rgba(168, 163, 158, 0.3);
+            line-height: 1;
+            margin-bottom: 16px;
+        }
+        .scene-title {
+            font-family: 'Outfit', sans-serif;
+            font-weight: 200;
+            font-size: clamp(22px, 2.5vw, 32px);
+            letter-spacing: 0.06em;
+            color: #2C2C2C;
+            margin-bottom: 20px;
+            line-height: 1.3;
+        }
+        .scene-desc {
+            font-family: 'Lora', serif;
+            font-size: 16px;
+            line-height: 1.8;
+            color: #4A4540;
+            max-width: 380px;
+        }
+
+        /* Folded cards - specs section */
+        .specs-section {
+            padding: 120px 48px;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        .spec-card {
+            background: linear-gradient(135deg, rgba(245,242,238,0.8), rgba(237,232,224,0.6));
+            border: 1px solid rgba(168, 163, 158, 0.12);
+            border-radius: 16px;
+            margin-bottom: 16px;
+            overflow: hidden;
+            transition: box-shadow 0.5s ease, border-color 0.5s ease;
+        }
+        .spec-card:hover {
+            border-color: rgba(232, 196, 168, 0.25);
+            box-shadow: 0 4px 40px rgba(240, 217, 198, 0.08);
+        }
+        .spec-card-header {
+            padding: 32px 36px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            cursor: pointer;
+            user-select: none;
+        }
+        .spec-card-header .metric {
+            font-family: 'Outfit', sans-serif;
+            font-weight: 100;
+            font-size: clamp(32px, 4vw, 48px);
+            color: #2C2C2C;
+            letter-spacing: 0.02em;
+            line-height: 1;
+        }
+        .spec-card-header .label {
+            font-family: 'Lora', serif;
+            font-size: 14px;
+            color: #A8A39E;
+            margin-top: 8px;
+            font-style: italic;
+        }
+        .spec-card-header .toggle-icon {
+            color: #A8A39E;
+            transition: transform 0.5s cubic-bezier(0.25, 0.1, 0.25, 1), color 0.3s ease;
+            flex-shrink: 0;
+        }
+        .spec-card.open .toggle-icon {
+            transform: rotate(180deg);
+            color: #4A4540;
+        }
+        .spec-card-body {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.7s cubic-bezier(0.25, 0.1, 0.25, 1), padding 0.5s ease;
+        }
+        .spec-card.open .spec-card-body {
+            max-height: 300px;
+        }
+        .spec-card-body-inner {
+            padding: 0 36px 32px;
+            border-top: 1px solid rgba(168, 163, 158, 0.1);
+            margin-top: 0;
+            padding-top: 24px;
+        }
+        .spec-detail {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 0;
+            font-family: 'Outfit', sans-serif;
+            font-weight: 200;
+            font-size: 13px;
+            letter-spacing: 0.04em;
+        }
+        .spec-detail .spec-key { color: #A8A39E; }
+        .spec-detail .spec-val { color: #4A4540; font-weight: 300; }
+
+        /* Close section */
+        .close-section {
+            padding: 180px 48px;
+            text-align: center;
+            position: relative;
+        }
+        .close-section::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 600px;
+            height: 600px;
+            border-radius: 50%;
+            background: radial-gradient(circle, rgba(240, 217, 198, 0.12) 0%, transparent 70%);
+            pointer-events: none;
+        }
+        .close-quote {
+            font-family: 'Outfit', sans-serif;
+            font-weight: 200;
+            font-size: clamp(24px, 3vw, 38px);
+            line-height: 1.7;
+            color: #2C2C2C;
+            letter-spacing: 0.02em;
+            max-width: 700px;
+            margin: 0 auto 48px;
+            position: relative;
+        }
+        .close-cta {
+            font-family: 'Outfit', sans-serif;
+            font-weight: 200;
+            font-size: 14px;
+            letter-spacing: 0.15em;
+            text-transform: uppercase;
+            color: #A8A39E;
+            text-decoration: none;
+            position: relative;
+            padding-bottom: 2px;
+            transition: color 0.4s ease;
+        }
+        .close-cta::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 1px;
+            background: linear-gradient(to right, #E8C4A8, transparent);
+            transition: width 0.5s ease;
+        }
+        .close-cta:hover { color: #2C2C2C; }
+        .close-cta:hover::after { width: 100%; }
+
+        /* Footer */
+        footer {
+            padding: 40px 48px;
+            text-align: center;
+            font-family: 'Outfit', sans-serif;
+            font-weight: 200;
+            font-size: 11px;
+            letter-spacing: 0.12em;
+            color: #A8A39E;
+        }
+
+        /* Scroll reveal animations */
+        .reveal {
+            opacity: 0;
+            transform: translateY(30px);
+            transition: opacity 1s cubic-bezier(0.25, 0.1, 0.25, 1), transform 1s cubic-bezier(0.25, 0.1, 0.25, 1);
+        }
+        .reveal.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+        .reveal-delay-1 { transition-delay: 0.15s; }
+        .reveal-delay-2 { transition-delay: 0.3s; }
+        .reveal-delay-3 { transition-delay: 0.45s; }
+
+        /* Reduced motion */
+        @media (prefers-reduced-motion: reduce) {
+            *, *::before, *::after {
+                animation-duration: 0.01ms !important;
+                transition-duration: 0.01ms !important;
+            }
+        }
+
+        /* Custom scrollbar */
+        ::-webkit-scrollbar { width: 4px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: rgba(168, 163, 158, 0.3); border-radius: 2px; }
+        ::-webkit-scrollbar-thumb:hover { background: rgba(168, 163, 158, 0.5); }
+    </style>
+</head>
+<body>
+
+    <!-- Cursor glow -->
+    <div class="cursor-glow" id="cursorGlow"></div>
+
+    <!-- SVG Filters for flowing light -->
+    <svg style="position:absolute;width:0;height:0;" aria-hidden="true">
+        <defs>
+            <linearGradient id="flowGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+                <stop offset="0%" stop-color="rgba(232,196,168,0)"/>
+                <stop offset="50%" stop-color="rgba(232,196,168,0.8)"/>
+                <stop offset="100%" stop-color="rgba(232,196,168,0)"/>
+            </linearGradient>
+            <filter id="flowGlow">
+                <feGaussianBlur stdDeviation="2" result="blur"/>
+                <feMerge>
+                    <feMergeNode in="blur"/>
+                    <feMergeNode in="SourceGraphic"/>
+                </feMerge>
+            </filter>
+        </defs>
+    </svg>
+
+    <!-- Navigation -->
+    <nav id="mainNav" role="navigation" aria-label="Main navigation">
+        <a href="#" class="nav-logo">SPECORA</a>
+        <div class="flex items-center gap-10">
+            <a href="#philosophy">Philosophy</a>
+            <a href="#experience">Experience</a>
+            <a href="#details">Details</a>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <section id="hero" aria-label="Hero">
+        <div class="hero-sticky" id="heroSticky">
+            <div class="hero-scene" id="heroScene">
+                <!-- Light rays -->
+                <div class="light-rays" id="lightRays">
+                    <div class="light-ray" style="left:32%; width:3px; transform:rotate(-2deg);"></div>
+                    <div class="light-ray" style="left:38%; width:2px; transform:rotate(1deg); opacity:0.7;"></div>
+                    <div class="light-ray" style="left:44%; width:4px; transform:rotate(-1deg); opacity:0.5;"></div>
+                    <div class="light-ray" style="left:50%; width:2px; transform:rotate(2deg); opacity:0.8;"></div>
+                    <div class="light-ray" style="left:55%; width:3px; transform:rotate(-0.5deg); opacity:0.6;"></div>
+                    <div class="light-ray" style="left:60%; width:2px; transform:rotate(1.5deg); opacity:0.4;"></div>
+                    <div class="light-ray" style="left:66%; width:3px; transform:rotate(-1.5deg); opacity:0.7;"></div>
+                </div>
+
+                <!-- Curtains -->
+                <div class="curtain curtain-left" id="curtainLeft"></div>
+                <div class="curtain curtain-right" id="curtainRight"></div>
+
+                <!-- Smart panel -->
+                <div class="smart-panel" id="smartPanel">
+                    <div class="panel-dot" id="panelDot1"></div>
+                    <div class="panel-dot" id="panelDot2"></div>
+                </div>
+
+                <!-- Dust particles -->
+                <canvas id="dustCanvas"></canvas>
+
+                <!-- Ambient warm glow center -->
+                <div id="heroWarmGlow" style="position:absolute;top:30%;left:35%;right:35%;bottom:20%;
+                    background:radial-gradient(ellipse at center, rgba(240,217,198,0) 0%, transparent 70%);
+                    z-index:1; transition: background 2s ease;"></div>
+            </div>
+
+            <!-- Text overlay -->
+            <div class="hero-text" id="heroText">
+                <h1 id="heroTitle">Specora Core</h1>
+                <p class="tagline" id="heroTagline">The code you never see. The comfort you always feel.</p>
+            </div>
+
+            <!-- Scroll indicator -->
+            <div class="scroll-indicator" id="scrollIndicator">
+                <div class="scroll-line">
+                    <div class="scroll-dot"></div>
+                </div>
+                <span class="scroll-text">Scroll</span>
+            </div>
+        </div>
+    </section>
+
+    <!-- Philosophy Section -->
+    <section id="philosophy" class="philosophy-section" aria-label="Philosophy">
+        <div class="reveal">
+            <div class="warm-divider" style="margin-bottom:64px;"></div>
+        </div>
+        <p class="lead reveal reveal-delay-1">
+            The best technology is technology <em>you don't feel</em>. It doesn't announce itself with complexity or demand your attention with alerts. It simply works — silently, completely, as if it were always there.
+        </p>
+        <p class="lead reveal reveal-delay-2" style="margin-top:40px;">
+            Specora Core generates your entire codebase from <em>contracts</em>. The contracts are the product. The code is disposable — monitored, healed, and evolved by an AI pipeline you'll never need to touch.
+        </p>
+        <div class="reveal reveal-delay-3" style="margin-top:64px;">
+            <div class="warm-divider"></div>
+        </div>
+    </section>
+
+    <!-- Interactive Demo Section -->
+    <section id="experience" class="interactive-section" aria-label="Interactive experience">
+        <div class="reveal" style="text-align:center; margin-bottom:48px;">
+            <p class="font-heading" style="font-weight:200; font-size:12px; letter-spacing:0.2em; text-transform:uppercase; color:#A8A39E; margin-bottom:12px;">Invisible Control</p>
+            <p class="font-body" style="font-style:italic; font-size:16px; color:#4A4540; max-width:440px; margin:0 auto;">
+                Move through the space. The environment responds — not with switches, but with presence.
+            </p>
+        </div>
+
+        <div class="demo-area reveal reveal-delay-1" id="demoArea">
+            <div class="demo-ambient-light" id="demoAmbientLight" style="left:50%; top:50%;"></div>
+            <div class="demo-contract-hint" id="demoContractHint">
+                <div class="icon-ring" id="demoIconRing">
+                    <i data-lucide="file-text" style="width:24px; height:24px;"></i>
+                </div>
+                <p>Your contract lives here</p>
+            </div>
+            <div class="demo-reading">
+                <div>
+                    <span class="value" id="demoTemp">22.0</span>
+                    Ambient
+                </div>
+                <div>
+                    <span class="value" id="demoHumidity">48</span>
+                    Clarity
+                </div>
+                <div>
+                    <span class="value" id="demoStatus">Idle</span>
+                    Pipeline
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Scene Narrative Section -->
+    <section id="scenes" class="scenes-section" aria-label="Scenes">
+        
+        <!-- Scene 1: Defining -->
+        <div class="scene-block">
+            <div class="scene-image reveal" style="justify-self:end;">
+                <img src="https://picsum.photos/seed/specora-morning/600/750.jpg" alt="Morning light on a minimal surface" loading="lazy">
+            </div>
+            <div class="scene-connector">
+                <svg class="light-flow-svg" viewBox="0 0 80 400" preserveAspectRatio="none" aria-hidden="true">
+                    <path d="M 40 0 C 40 100, 40 300, 40 400" class="light-flow-path"/>
+                    <path d="M 40 0 C 40 100, 40 300, 40 400" class="light-flow-glow"/>
+                </svg>
+            </div>
+            <div class="scene-text reveal reveal-delay-1">
+                <div class="scene-number">01</div>
+                <h2 class="scene-title">Defining</h2>
+                <p class="scene-desc">
+                    Write the contract. That's all you do. Describe what the system should be — its boundaries, its promises, its shape. The rest unfolds in silence, like morning light filling a room you didn't know was dark.
+                </p>
+            </div>
+        </div>
+
+        <!-- Scene 2: Generating -->
+        <div class="scene-block">
+            <div class="scene-image reveal" style="justify-self:end;">
+                <img src="https://picsum.photos/seed/specora-steam/600/750.jpg" alt="Soft steam rising in warm light" loading="lazy">
+            </div>
+            <div class="scene-connector">
+                <svg class="light-flow-svg" viewBox="0 0 80 400" preserveAspectRatio="none" aria-hidden="true">
+                    <path d="M 40 0 C 40 100, 40 300, 40 400" class="light-flow-path"/>
+                    <path d="M 40 0 C 40 100, 40 300, 40 400" class="light-flow-glow" style="animation-delay:-1s;"/>
+                </svg>
+            </div>
+            <div class="scene-text reveal reveal-delay-1">
+                <div class="scene-number">02</div>
+                <h2 class="scene-title">Generating</h2>
+                <p class="scene-desc">
+                    The pipeline awakens. Code materializes from intention — not written by hand, but grown from your specification. Every function, every test, every deployment configuration, woven together like fabric from thread.
+                </p>
+            </div>
+        </div>
+
+        <!-- Scene 3: Living -->
+        <div class="scene-block">
+            <div class="scene-image reveal" style="justify-self:end;">
+                <img src="https://picsum.photos/seed/specora-evening/600/750.jpg" alt="Evening calm in a warm interior" loading="lazy">
+            </div>
+            <div class="scene-connector">
+                <svg class="light-flow-svg" viewBox="0 0 80 400" preserveAspectRatio="none" aria-hidden="true">
+                    <path d="M 40 0 C 40 100, 40 300, 40 400" class="light-flow-path"/>
+                    <path d="M 40 0 C 40 100, 40 300, 40 400" class="light-flow-glow" style="animation-delay:-2s;"/>
+                </svg>
+            </div>
+            <div class="scene-text reveal reveal-delay-1">
+                <div class="scene-number">03</div>
+                <h2 class="scene-title">Living</h2>
+                <p class="scene-desc">
+                    It monitors. It heals. It evolves. While you read, while you rest, while you live — your codebase breathes. Errors dissolve before they arrive. Enhancements arrive like a change in the weather: noticed only in retrospect.
+                </p>
+            </div>
+        </div>
+    </section>
+
+    <!-- Technical Specs Section -->
+    <section id="details" class="specs-section" aria-label="Technical details">
+        <div class="reveal" style="text-align:center; margin-bottom:64px;">
+            <p class="font-heading" style="font-weight:200; font-size:12px; letter-spacing:0.2em; text-transform:uppercase; color:#A8A39E; margin-bottom:12px;">Beneath the Surface</p>
+            <p class="font-body" style="font-style:italic; font-size:15px; color:#4A4540;">
+                The engineering exists so you don't have to. But if you're curious...
+            </p>
+        </div>
+
+        <!-- Card 1 -->
+        <div class="spec-card reveal reveal-delay-1" data-spec>
+            <div class="spec-card-header" role="button" tabindex="0" aria-expanded="false">
+                <div>
+                    <div class="metric">0.1s</div>
+                    <div class="label">Ultra-fast response to contract changes</div>
+                </div>
+                <i data-lucide="chevron-down" class="toggle-icon" style="width:18px; height:18px;"></i>
+            </div>
+            <div class="spec-card-body">
+                <div class="spec-card-body-inner">
+                    <div class="spec-detail"><span class="spec-key">Inference Engine</span><span class="spec-val">Custom transformer, 7B parameters</span></div>
+                    <div class="spec-detail"><span class="spec-key">Latency (P99)</span><span class="spec-val">98ms end-to-end generation</span></div>
+                    <div class="spec-detail"><span class="spec-key">Contract Parse</span><span class="spec-val">12ms average, schema-aware</span></div>
+                    <div class="spec-detail"><span class="spec-key">Diff Application</span><span class="spec-val">Incremental, conflict-free merge</span></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Card 2 -->
+        <div class="spec-card reveal reveal-delay-2" data-spec>
+            <div class="spec-card-header" role="button" tabindex="0" aria-expanded="false">
+                <div>
+                    <div class="metric">24/7</div>
+                    <div class="label">Always watching, never intruding</div>
+                </div>
+                <i data-lucide="chevron-down" class="toggle-icon" style="width:18px; height:18px;"></i>
+            </div>
+            <div class="spec-card-body">
+                <div class="spec-card-body-inner">
+                    <div class="spec-detail"><span class="spec-key">Monitoring</span><span class="spec-val">Real-time AST diff + runtime telemetry</span></div>
+                    <div class="spec-detail"><span class="spec-key">Error Detection</span><span class="spec-val">99.7% pre-deployment catch rate</span></div>
+                    <div class="spec-detail"><span class="spec-key">Self-Heal Latency</span><span class="spec-val">Mean 4.2s from detection to patch</span></div>
+                    <div class="spec-detail"><span class="spec-key">Alert Philosophy</span><span class="spec-val">Silent unless human decision required</span></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Card 3 -->
+        <div class="spec-card reveal reveal-delay-3" data-spec>
+            <div class="spec-card-header" role="button" tabindex="0" aria-expanded="false">
+                <div>
+                    <div class="metric">Infinite</div>
+                    <div class="label">Born from contracts, built to outlast</div>
+                </div>
+                <i data-lucide="chevron-down" class="toggle-icon" style="width:18px; height:18px;"></i>
+            </div>
+            <div class="spec-card-body">
+                <div class="spec-card-body-inner">
+                    <div class="spec-detail"><span class="spec-key">Language Support</span><span class="spec-val">TypeScript, Rust, Go, Python, Kotlin</span></div>
+                    <div class="spec-detail"><span class="spec-key">Contract Format</span><span class="spec-val">Open spec — JSON Schema + behavioral annotations</span></div>
+                    <div class="spec-detail"><span class="spec-key">Pipeline Stages</span><span class="spec-val">Parse → Generate → Test → Lint → Deploy → Monitor</span></div>
+                    <div class="spec-detail"><span class="spec-key">Full Regeneration</span><span class="spec-val">From contract to deployed in under 90 seconds</span></div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Close Section -->
+    <section class="close-section" aria-label="Closing">
+        <div class="warm-divider reveal" style="margin-bottom:80px;"></div>
+        <p class="close-quote reveal reveal-delay-1">
+            The contract endures. The code dissolves. What remains is only what matters — your intent, made real.
+        </p>
+        <a href="#" class="close-cta reveal reveal-delay-2">Begin with a contract</a>
+    </section>
+
+    <!-- Footer -->
+    <footer>
+        <span style="opacity:0.5;">&copy; 2025 Specora</span>
+        <span style="margin:0 16px; opacity:0.3;">&middot;</span>
+        <span style="opacity:0.5;">Built from contracts.</span>
+    </footer>
+
+    <script>
+        // =============================================
+        // Initialize Lucide icons
+        // =============================================
+        lucide.createIcons();
+
+        // =============================================
+        // Dust Particle System (Hero)
+        // =============================================
+        const dustCanvas = document.getElementById('dustCanvas');
+        const dustCtx = dustCanvas.getContext('2d');
+        let dustParticles = [];
+        let heroProgress = 0; // 0 = away mode, 1 = home mode
+
+        function resizeDustCanvas() {
+            const sticky = document.getElementById('heroSticky');
+            dustCanvas.width = sticky.offsetWidth;
+            dustCanvas.height = sticky.offsetHeight;
+        }
+        resizeDustCanvas();
+        window.addEventListener('resize', resizeDustCanvas);
+
+        class DustParticle {
+            constructor() { this.reset(true); }
+            reset(initial = false) {
+                this.x = Math.random() * dustCanvas.width;
+                this.y = initial ? Math.random() * dustCanvas.height : dustCanvas.height + Math.random() * 40;
+                this.size = Math.random() * 1.8 + 0.4;
+                this.speedX = (Math.random() - 0.5) * 0.25;
+                this.speedY = -(Math.random() * 0.15 + 0.03);
+                this.baseOpacity = Math.random() * 0.25 + 0.05;
+                this.life = Math.random() * 800 + 400;
+                this.age = initial ? Math.random() * this.life : 0;
+                this.wobbleSpeed = Math.random() * 0.002 + 0.001;
+                this.wobbleAmp = Math.random() * 0.5 + 0.2;
+            }
+            update() {
+                this.x += this.speedX + Math.sin(this.age * this.wobbleSpeed) * this.wobbleAmp * 0.1;
+                this.y += this.speedY;
+                this.age++;
+                if (this.age > this.life || this.y < -20 || this.x < -20 || this.x > dustCanvas.width + 20) {
+                    this.reset();
+                }
+            }
+            draw(ctx, progress) {
+                const fadeIn = Math.min(this.age / 120, 1);
+                const fadeOut = this.age > this.life - 120 ? Math.max(0, (this.life - this.age) / 120) : 1;
+                // Only visible when light is present (progress > 0.1)
+                const lightFactor = Math.max(0, (progress - 0.1) / 0.5);
+                const alpha = this.baseOpacity * fadeIn * fadeOut * Math.min(lightFactor, 1);
+                if (alpha < 0.005) return;
+
+                const r = Math.max(0.1, this.size * 2.5);
+                const gradient = ctx.createRadialGradient(this.x, this.y, 0, this.x, this.y, r);
+                gradient.addColorStop(0, `rgba(240, 217, 198, ${alpha})`);
+                gradient.addColorStop(1, `rgba(240, 217, 198, 0)`);
+                ctx.fillStyle = gradient;
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, r, 0, Math.PI * 2);
+                ctx.fill();
+            }
+        }
+
+        // Create particles
+        const PARTICLE_COUNT = 60;
+        for (let i = 0; i < PARTICLE_COUNT; i++) {
+            dustParticles.push(new DustParticle());
+        }
+
+        function animateDust() {
+            dustCtx.clearRect(0, 0, dustCanvas.width, dustCanvas.height);
+            dustParticles.forEach(p => {
+                p.update();
+                p.draw(dustCtx, heroProgress);
+            });
+            requestAnimationFrame(animateDust);
+        }
+        animateDust();
+
+        // =============================================
+        // Hero Scroll Transition (Away → Home mode)
+        // =============================================
+        const heroSection = document.getElementById('hero');
+        const heroScene = document.getElementById('heroScene');
+        const heroTitle = document.getElementById('heroTitle');
+        const heroTagline = document.getElementById('heroTagline');
+        const heroText = document.getElementById('heroText');
+        const lightRays = document.getElementById('lightRays');
+        const curtainLeft = document.getElementById('curtainLeft');
+        const curtainRight = document.getElementById('curtainRight');
+        const smartPanel = document.getElementById('smartPanel');
+        const panelDot1 = document.getElementById('panelDot1');
+        const panelDot2 = document.getElementById('panelDot2');
+        const heroWarmGlow = document.getElementById('heroWarmGlow');
+        const scrollIndicator = document.getElementById('scrollIndicator');
+        const mainNav = document.getElementById('mainNav');
+
+        // Color interpolation helper
+        function lerpColor(a, b, t) {
+            const ar = parseInt(a.slice(1,3),16), ag = parseInt(a.slice(3,5),16), ab = parseInt(a.slice(5,7),16);
+            const br = parseInt(b.slice(1,3),16), bg = parseInt(b.slice(3,5),16), bb = parseInt(b.slice(5,7),16);
+            const rr = Math.round(ar + (br - ar) * t);
+            const rg = Math.round(ag + (bg - ag) * t);
+            const rb = Math.round(ab + (bb - ab) * t);
+            return `rgb(${rr}, ${rg}, ${rb})`;
+        }
+
+        const awayBg = '#1a1714';
+        const homeBg = '#F0EBE3';
+
+        function updateHeroScroll() {
+            const rect = heroSection.getBoundingClientRect();
+            const scrollableDistance = heroSection.offsetHeight - window.innerHeight;
+            const scrolled = -rect.top;
+            heroProgress = Math.max(0, Math.min(1, scrolled / scrollableDistance));
+
+            // Background color
+            const bgColor = lerpColor(awayBg, homeBg, heroProgress);
+            heroScene.style.background = bgColor;
+
+            // Text color transition
+            const textAlpha = Math.max(0.1, 1 - heroProgress * 1.2);
+            const textColor = heroProgress < 0.5 
+                ? `rgba(245, 242, 238, ${textAlpha})` 
+                : `rgba(44, 44, 44, ${Math.min(1, (heroProgress - 0.4) * 2)})`;
+            heroTitle.style.color = textColor;
+            heroTagline.style.color = heroProgress < 0.5 
+                ? `rgba(168, 163, 158, ${textAlpha * 0.7})` 
+                : `rgba(168, 163, 158, ${Math.min(0.7, (heroProgress - 0.4) * 1.4)})`;
+
+            // Text fade out near end of scroll
+            const textFade = heroProgress > 0.6 ? Math.max(0, 1 - (heroProgress - 0.6) / 0.3) : 1;
+            heroText.style.opacity = textFade;
+            heroText.style.transform = `translateY(${(1 - textFade) * -20}px)`;
+
+            // Light rays opacity
+            lightRays.style.opacity = Math.max(0, (heroProgress - 0.15) / 0.4);
+
+            // Curtains open
+            curtainLeft.style.transform = `translateX(${-heroProgress * 8}%)`;
+            curtainRight.style.transform = `translateX(${heroProgress * 8}%)`;
+            curtainLeft.style.opacity = 1 - heroProgress * 0.5;
+            curtainRight.style.opacity = 1 - heroProgress * 0.5;
+
+            // Smart panel glow
+            if (heroProgress > 0.4) {
+                const panelT = (heroProgress - 0.4) / 0.6;
+                smartPanel.style.background = `rgba(245, 242, 238, ${0.02 + panelT * 0.06})`;
+                smartPanel.style.borderColor = `rgba(245, 242, 238, ${0.015 + panelT * 0.04})`;
+                smartPanel.style.boxShadow = `0 0 ${40 * panelT}px rgba(240, 217, 198, ${0.08 * panelT})`;
+                panelDot1.classList.toggle('active', panelT > 0.5);
+                panelDot2.classList.toggle('active', panelT > 0.7);
+            }
+
+            // Warm center glow
+            if (heroProgress > 0.2) {
+                const glowT = (heroProgress - 0.2) / 0.6;
+                heroWarmGlow.style.background = `radial-gradient(ellipse at center, rgba(240, 217, 198, ${0.15 * glowT}) 0%, transparent 70%)`;
+            }
+
+            // Scroll indicator fade
+            scrollIndicator.style.opacity = Math.max(0, 1 - heroProgress * 4);
+
+            // Nav style
+            mainNav.classList.toggle('scrolled', heroProgress > 0.5);
+            if (heroProgress > 0.5) {
+                mainNav.querySelectorAll('a').forEach(a => {
+                    if (!a.classList.contains('nav-logo')) {
+                        a.style.color = '#A8A39E';
+                    } else {
+                        a.style.color = '#2C2C2C';
+                    }
+                });
+            } else {
+                mainNav.querySelectorAll('a').forEach(a => {
+                    a.style.color = 'rgba(245, 242, 238, 0.6)';
+                });
+            }
+        }
+
+        // =============================================
+        // Ambient Time-of-Day Shift (full page)
+        // =============================================
+        function updateAmbientTime() {
+            const scrollFraction = window.scrollY / Math.max(1, document.body.scrollHeight - window.innerHeight);
+            // Map scroll to warmth and brightness
+            // 0.0-0.15: night→morning (warming up)
+            // 0.15-0.45: morning→noon (brightening)
+            // 0.45-0.7: noon→dusk (warming, darkening slightly)
+            // 0.7-1.0: dusk→night (cooling, darkening)
+            let warmth, brightness;
+            if (scrollFraction < 0.15) {
+                const t = scrollFraction / 0.15;
+                warmth = t * 0.5;
+                brightness = 0.92 + t * 0.08;
+            } else if (scrollFraction < 0.45) {
+                const t = (scrollFraction - 0.15) / 0.3;
+                warmth = 0.5 + t * 0.2;
+                brightness = 1;
+            } else if (scrollFraction < 0.7) {
+                const t = (scrollFraction - 0.45) / 0.25;
+                warmth = 0.7 - t * 0.3;
+                brightness = 1 - t * 0.04;
+            } else {
+                const t = (scrollFraction - 0.7) / 0.3;
+                warmth = 0.4 - t * 0.3;
+                brightness = 0.96 - t * 0.06;
+            }
+
+            // Only apply to body background (not hero)
+            const r = Math.round(245 - warmth * 8);
+            const g = Math.round(242 - warmth * 12);
+            const b = Math.round(238 - warmth * 18);
+            const factor = Math.max(0.85, brightness);
+            const fr = Math.round(r * factor);
+            const fg = Math.round(g * factor);
+            const fb = Math.round(b * factor);
+            document.body.style.background = `rgb(${fr}, ${fg}, ${fb})`;
+        }
+
+        // =============================================
+        // Scroll Handler (passive)
+        // =============================================
+        let ticking = false;
+        window.addEventListener('scroll', () => {
+            if (!ticking) {
+                requestAnimationFrame(() => {
+                    updateHeroScroll();
+                    updateAmbientTime();
+                    ticking = false;
+                });
+                ticking = true;
+            }
+        }, { passive: true });
+
+        // Initial call
+        updateHeroScroll();
+        updateAmbientTime();
+
+        // =============================================
+        // Cursor Glow
+        // =============================================
+        const cursorGlow = document.getElementById('cursorGlow');
+        let cursorX = -500, cursorY = -500;
+        let glowX = -500, glowY = -500;
+
+        document.addEventListener('mousemove', (e) => {
+            cursorX = e.clientX;
+            cursorY = e.clientY;
+        });
+
+        function animateCursorGlow() {
+            glowX += (cursorX - glowX) * 0.08;
+            glowY += (cursorY - glowY) * 0.08;
+            cursorGlow.style.left = glowX + 'px';
+            cursorGlow.style.top = glowY + 'px';
+            requestAnimationFrame(animateCursorGlow);
+        }
+        animateCursorGlow();
+
+        // Hide on touch devices
+        if ('ontouchstart' in window) {
+            cursorGlow.style.display = 'none';
+        }
+
+        // =============================================
+        // Interactive Demo (mouse-reactive environment)
+        // =============================================
+        const demoArea = document.getElementById('demoArea');
+        const demoAmbientLight = document.getElementById('demoAmbientLight');
+        const demoTemp = document.getElementById('demoTemp');
+        const demoHumidity = document.getElementById('demoHumidity');
+        const demoStatus = document.getElementById('demoStatus');
+        const demoIconRing = document.getElementById('demoIconRing');
+        const demoContractHint = document.getElementById('demoContractHint');
+
+        let demoMouseX = 0.5, demoMouseY = 0.5;
+        let demoSmoothX = 0.5, demoSmoothY = 0.5;
+        let demoActive = false;
+        let demoActiveSmooth = 0;
+
+        demoArea.addEventListener('mousemove', (e) => {
+            const rect = demoArea.getBoundingClientRect();
+            demoMouseX = (e.clientX - rect.left) / rect.width;
+            demoMouseY = (e.clientY - rect.top) / rect.height;
+            demoActive = true;
+        });
+
+        demoArea.addEventListener('mouseleave', () => {
+            demoActive = false;
+            demoMouseX = 0.5;
+            demoMouseY = 0.5;
+        });
+
+        // Touch support
+        demoArea.addEventListener('touchmove', (e) => {
+            const rect = demoArea.getBoundingClientRect();
+            const touch = e.touches[0];
+            demoMouseX = (touch.clientX - rect.left) / rect.width;
+            demoMouseY = (touch.clientY - rect.top) / rect.height;
+            demoActive = true;
+        }, { passive: true });
+
+        demoArea.addEventListener('touchend', () => {
+            demoActive = false;
+            demoMouseX = 0.5;
+            demoMouseY = 0.5;
+        });
+
+        function animateDemo() {
+            const ease = 0.04;
+            demoSmoothX += (demoMouseX - demoSmoothX) * ease;
+            demoSmoothY += (demoMouseY - demoSmoothY) * ease;
+            demoActiveSmooth += ((demoActive ? 1 : 0) - demoActiveSmooth) * 0.03;
+
+            // Move ambient light
+            demoAmbientLight.style.left = (demoSmoothX * 100) + '%';
+            demoAmbientLight.style.top = (demoSmoothY * 100) + '%';
+            demoAmbientLight.style.opacity = 0.3 + demoActiveSmooth * 0.7;
+            demoAmbientLight.style.width = (250 + demoActiveSmooth * 100) + 'px';
+            demoAmbientLight.style.height = (250 + demoActiveSmooth * 100) + 'px';
+
+            // Calculate "environment" values based on position
+            // Temperature: center is 22, edges are 19-25
+            const distFromCenter = Math.sqrt((demoSmoothX - 0.5) ** 2 + (demoSmoothY - 0.5) ** 2);
+            const temp = (22 - distFromCenter * 6).toFixed(1);
+            // Clarity: center is 52, edges 42
+            const clarity = Math.round(52 - distFromCenter * 20);
+
+            demoTemp.textContent = temp;
+            demoHumidity.textContent = clarity;
+
+            // Status
+            if (demoActiveSmooth > 0.6) {
+                demoStatus.textContent = 'Active';
+                demoStatus.style.color = '#4A4540';
+            } else if (demoActiveSmooth > 0.2) {
+                demoStatus.textContent = 'Sensing';
+                demoStatus.style.color = '#A8A39E';
+            } else {
+                demoStatus.textContent = 'Idle';
+                demoStatus.style.color = '#A8A39E';
+            }
+
+            // Icon ring responds
+            const ringBorderAlpha = 0.2 + demoActiveSmooth * 0.4;
+            demoIconRing.style.borderColor = `rgba(232, 196, 168, ${ringBorderAlpha})`;
+            if (demoActiveSmooth > 0.5) {
+                demoIconRing.style.boxShadow = `0 0 20px rgba(240, 217, 198, ${demoActiveSmooth * 0.15})`;
+            } else {
+                demoIconRing.style.boxShadow = 'none';
+            }
+
+            // Hint text fades when active
+            demoContractHint.style.opacity = 1 - demoActiveSmooth * 0.7;
+
+            requestAnimationFrame(animateDemo);
+        }
+        animateDemo();
+
+        // =============================================
+        // Folded Spec Cards
+        // =============================================
+        document.querySelectorAll('[data-spec]').forEach(card => {
+            const header = card.querySelector('.spec-card-header');
+            
+            function toggleCard() {
+                const isOpen = card.classList.contains('open');
+                // Close all other cards
+                document.querySelectorAll('[data-spec]').forEach(other => {
+                    if (other !== card) {
+                        other.classList.remove('open');
+                        other.querySelector('.spec-card-header').setAttribute('aria-expanded', 'false');
+                    }
+                });
+                card.classList.toggle('open', !isOpen);
+                header.setAttribute('aria-expanded', !isOpen);
+            }
+
+            header.addEventListener('click', toggleCard);
+            header.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    toggleCard();
+                }
+            });
+        });
+
+        // =============================================
+        // Scroll Reveal (IntersectionObserver)
+        // =============================================
+        const revealObserver = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.classList.add('visible');
+                }
+            });
+        }, {
+            threshold: 0.15,
+            rootMargin: '0px 0px -60px 0px'
+        });
+
+        document.querySelectorAll('.reveal').forEach(el => revealObserver.observe(el));
+
+        // =============================================
+        // Smooth scroll for nav links
+        // =============================================
+        document.querySelectorAll('nav a[href^="#"]').forEach(link => {
+            link.addEventListener('click', (e) => {
+                const targetId = link.getAttribute('href');
+                if (targetId === '#') return;
+                e.preventDefault();
+                const target = document.querySelector(targetId);
+                if (target) {
+                    target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                }
+            });
+        });
+
+        // =============================================
+        // Window resize handler
+        // =============================================
+        window.addEventListener('resize', () => {
+            resizeDustCanvas();
+            updateHeroScroll();
+            updateAmbientTime();
+        });
+    </script>
+</body>
+</html>
