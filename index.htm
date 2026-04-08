@@ -808,6 +808,30 @@
             </p>
         </div>
 
+        <!-- div class="demo-area reveal reveal-delay-1" id="demoArea">
+            <div class="demo-ambient-light" id="demoAmbientLight" style="left:50%; top:50%;"></div>
+            <div class="demo-contract-hint" id="demoContractHint">
+                <div class="icon-ring" id="demoIconRing">
+                    <i data-lucide="file-text" style="width:24px; height:24px;"></i>
+                </div>
+                <p>Your contract lives here</p>
+            </div>
+            <div class="demo-reading">
+                <div>
+                    <span class="value" id="demoTemp">22.0</span>
+                    Ambient
+                </div>
+                <div>
+                    <span class="value" id="demoHumidity">48</span>
+                    Clarity
+                </div>
+                <div>
+                    <span class="value" id="demoStatus">Idle</span>
+                    Pipeline
+                </div>
+            </div>
+        </div -->
+    </section>
 
     <!-- Scene Narrative Section -->
     <section id="scenes" class="scenes-section" aria-label="Scenes">
@@ -886,7 +910,7 @@
         <div class="spec-card reveal reveal-delay-1" data-spec>
             <div class="spec-card-header" role="button" tabindex="0" aria-expanded="false">
                 <div>
-                    <div class="metric">2m/div>
+                    <div class="metric">0.1s</div>
                     <div class="label">Ultra-fast response to contract changes</div>
                 </div>
                 <i data-lucide="chevron-down" class="toggle-icon" style="width:18px; height:18px;"></i>
@@ -1225,8 +1249,8 @@
         // Interactive Demo (mouse-reactive environment)
         // =============================================
         //const demoArea = document.getElementById('demoArea');
-        const demoAmbientLight = document.getElementById('demoAmbientLight');
-        const demoTemp = document.getElementById('demoTemp');
+        // const demoAmbientLight = document.getElementById('demoAmbientLight');
+        // const demoTemp = document.getElementById('demoTemp');
         const demoHumidity = document.getElementById('demoHumidity');
         const demoStatus = document.getElementById('demoStatus');
         const demoIconRing = document.getElementById('demoIconRing');
@@ -1265,56 +1289,56 @@
         //     demoMouseY = 0.5;
         // });
 
-        function animateDemo() {
-            const ease = 0.04;
-            demoSmoothX += (demoMouseX - demoSmoothX) * ease;
-            demoSmoothY += (demoMouseY - demoSmoothY) * ease;
-            demoActiveSmooth += ((demoActive ? 1 : 0) - demoActiveSmooth) * 0.03;
+        // function animateDemo() {
+        //     const ease = 0.04;
+        //     demoSmoothX += (demoMouseX - demoSmoothX) * ease;
+        //     demoSmoothY += (demoMouseY - demoSmoothY) * ease;
+        //     demoActiveSmooth += ((demoActive ? 1 : 0) - demoActiveSmooth) * 0.03;
 
-            // Move ambient light
-            demoAmbientLight.style.left = (demoSmoothX * 100) + '%';
-            demoAmbientLight.style.top = (demoSmoothY * 100) + '%';
-            demoAmbientLight.style.opacity = 0.3 + demoActiveSmooth * 0.7;
-            demoAmbientLight.style.width = (250 + demoActiveSmooth * 100) + 'px';
-            demoAmbientLight.style.height = (250 + demoActiveSmooth * 100) + 'px';
+        //     // Move ambient light
+        //     demoAmbientLight.style.left = (demoSmoothX * 100) + '%';
+        //     demoAmbientLight.style.top = (demoSmoothY * 100) + '%';
+        //     demoAmbientLight.style.opacity = 0.3 + demoActiveSmooth * 0.7;
+        //     demoAmbientLight.style.width = (250 + demoActiveSmooth * 100) + 'px';
+        //     demoAmbientLight.style.height = (250 + demoActiveSmooth * 100) + 'px';
 
-            // Calculate "environment" values based on position
-            // Temperature: center is 22, edges are 19-25
-            const distFromCenter = Math.sqrt((demoSmoothX - 0.5) ** 2 + (demoSmoothY - 0.5) ** 2);
-            const temp = (22 - distFromCenter * 6).toFixed(1);
-            // Clarity: center is 52, edges 42
-            const clarity = Math.round(52 - distFromCenter * 20);
+        //     // Calculate "environment" values based on position
+        //     // Temperature: center is 22, edges are 19-25
+        //     const distFromCenter = Math.sqrt((demoSmoothX - 0.5) ** 2 + (demoSmoothY - 0.5) ** 2);
+        //     const temp = (22 - distFromCenter * 6).toFixed(1);
+        //     // Clarity: center is 52, edges 42
+        //     const clarity = Math.round(52 - distFromCenter * 20);
 
-            demoTemp.textContent = temp;
-            demoHumidity.textContent = clarity;
+        //     demoTemp.textContent = temp;
+        //     demoHumidity.textContent = clarity;
 
-            // Status
-            if (demoActiveSmooth > 0.6) {
-                demoStatus.textContent = 'Active';
-                demoStatus.style.color = '#4A4540';
-            } else if (demoActiveSmooth > 0.2) {
-                demoStatus.textContent = 'Sensing';
-                demoStatus.style.color = '#A8A39E';
-            } else {
-                demoStatus.textContent = 'Idle';
-                demoStatus.style.color = '#A8A39E';
-            }
+        //     // Status
+        //     if (demoActiveSmooth > 0.6) {
+        //         demoStatus.textContent = 'Active';
+        //         demoStatus.style.color = '#4A4540';
+        //     } else if (demoActiveSmooth > 0.2) {
+        //         demoStatus.textContent = 'Sensing';
+        //         demoStatus.style.color = '#A8A39E';
+        //     } else {
+        //         demoStatus.textContent = 'Idle';
+        //         demoStatus.style.color = '#A8A39E';
+        //     }
 
-            // Icon ring responds
-            const ringBorderAlpha = 0.2 + demoActiveSmooth * 0.4;
-            demoIconRing.style.borderColor = `rgba(232, 196, 168, ${ringBorderAlpha})`;
-            if (demoActiveSmooth > 0.5) {
-                demoIconRing.style.boxShadow = `0 0 20px rgba(240, 217, 198, ${demoActiveSmooth * 0.15})`;
-            } else {
-                demoIconRing.style.boxShadow = 'none';
-            }
+        //     // Icon ring responds
+        //     const ringBorderAlpha = 0.2 + demoActiveSmooth * 0.4;
+        //     demoIconRing.style.borderColor = `rgba(232, 196, 168, ${ringBorderAlpha})`;
+        //     if (demoActiveSmooth > 0.5) {
+        //         demoIconRing.style.boxShadow = `0 0 20px rgba(240, 217, 198, ${demoActiveSmooth * 0.15})`;
+        //     } else {
+        //         demoIconRing.style.boxShadow = 'none';
+        //     }
 
-            // Hint text fades when active
-            demoContractHint.style.opacity = 1 - demoActiveSmooth * 0.7;
+        //     // Hint text fades when active
+        //     demoContractHint.style.opacity = 1 - demoActiveSmooth * 0.7;
 
-            requestAnimationFrame(animateDemo);
-        }
-        animateDemo();
+        //     requestAnimationFrame(animateDemo);
+        // }
+        // animateDemo();
 
         // =============================================
         // Folded Spec Cards
