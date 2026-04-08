@@ -807,7 +807,7 @@
                 Move through the space. The environment responds — not with switches, but with presence.
             </p>
         </div>
-    </section>
+
 
     <!-- Scene Narrative Section -->
     <section id="scenes" class="scenes-section" aria-label="Scenes">
@@ -886,7 +886,7 @@
         <div class="spec-card reveal reveal-delay-1" data-spec>
             <div class="spec-card-header" role="button" tabindex="0" aria-expanded="false">
                 <div>
-                    <div class="metric">2m</div>
+                    <div class="metric">2m/div>
                     <div class="label">Ultra-fast response to contract changes</div>
                 </div>
                 <i data-lucide="chevron-down" class="toggle-icon" style="width:18px; height:18px;"></i>
@@ -1224,7 +1224,7 @@
         // =============================================
         // Interactive Demo (mouse-reactive environment)
         // =============================================
-        const demoArea = document.getElementById('demoArea');
+        //const demoArea = document.getElementById('demoArea');
         const demoAmbientLight = document.getElementById('demoAmbientLight');
         const demoTemp = document.getElementById('demoTemp');
         const demoHumidity = document.getElementById('demoHumidity');
@@ -1237,33 +1237,33 @@
         let demoActive = false;
         let demoActiveSmooth = 0;
 
-        demoArea.addEventListener('mousemove', (e) => {
-            const rect = demoArea.getBoundingClientRect();
-            demoMouseX = (e.clientX - rect.left) / rect.width;
-            demoMouseY = (e.clientY - rect.top) / rect.height;
-            demoActive = true;
-        });
+        // demoArea.addEventListener('mousemove', (e) => {
+        //     const rect = demoArea.getBoundingClientRect();
+        //     demoMouseX = (e.clientX - rect.left) / rect.width;
+        //     demoMouseY = (e.clientY - rect.top) / rect.height;
+        //     demoActive = true;
+        // });
 
-        demoArea.addEventListener('mouseleave', () => {
-            demoActive = false;
-            demoMouseX = 0.5;
-            demoMouseY = 0.5;
-        });
+        // demoArea.addEventListener('mouseleave', () => {
+        //     demoActive = false;
+        //     demoMouseX = 0.5;
+        //     demoMouseY = 0.5;
+        // });
 
-        // Touch support
-        demoArea.addEventListener('touchmove', (e) => {
-            const rect = demoArea.getBoundingClientRect();
-            const touch = e.touches[0];
-            demoMouseX = (touch.clientX - rect.left) / rect.width;
-            demoMouseY = (touch.clientY - rect.top) / rect.height;
-            demoActive = true;
-        }, { passive: true });
+        // // Touch support
+        // demoArea.addEventListener('touchmove', (e) => {
+        //     const rect = demoArea.getBoundingClientRect();
+        //     const touch = e.touches[0];
+        //     demoMouseX = (touch.clientX - rect.left) / rect.width;
+        //     demoMouseY = (touch.clientY - rect.top) / rect.height;
+        //     demoActive = true;
+        // }, { passive: true });
 
-        demoArea.addEventListener('touchend', () => {
-            demoActive = false;
-            demoMouseX = 0.5;
-            demoMouseY = 0.5;
-        });
+        // demoArea.addEventListener('touchend', () => {
+        //     demoActive = false;
+        //     demoMouseX = 0.5;
+        //     demoMouseY = 0.5;
+        // });
 
         function animateDemo() {
             const ease = 0.04;
